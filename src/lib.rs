@@ -239,6 +239,69 @@ macro_rules! internal {
             $($tail)*
         }
     };
+    { @
+        ( $($t_params:tt)* )
+        ( $($where_clause:tt)* )
+        ($self_ty:ty)
+        Index<$idx_ty:ty, Output = $out_ty:ty> {
+            |&$slf:ident, $idx:pat| $def:expr
+            $(
+                , |&mut $slf_mut:ident, $idx_mut:pat| $def_mut:expr
+            )?
+            $(,)?
+        }
+        $($tail:tt)*
+    } => {
+        impl<$($t_params)*> std::ops::Index<$idx_ty> for $self_ty
+        where $($where_clause)* {
+            type Output = $out_ty;
+            fn index(&$slf, $idx: $idx_ty) -> &Self::Output {
+                $def
+            }
+        }
+        $crate::internal! {
+            @($($t_params)*)($($where_clause)*)($self_ty)
+            $(
+                IndexMut<$idx_ty> { |&mut $slf_mut, $idx_mut| $def_mut }
+            )?
+            $($tail)*
+        }
+    };
+    { @
+        ( $($t_params:tt)* )
+        ( $($where_clause:tt)* )
+        ($self_ty:ty)
+        IndexMut<$idx_ty:ty> {
+            |&mut $slf:ident, $idx:pat| $def_mut:expr
+            $(,)?
+        }
+        $($tail:tt)*
+    } => {
+        impl<$($t_params)*> std::ops::IndexMut<$idx_ty> for $self_ty
+        where $($where_clause)* {
+            fn index_mut(&mut $slf, $idx: $idx_ty) -> &mut Self::Output {
+                $def_mut
+            }
+        }
+        $crate::internal! {
+            @($($t_params)*)($($where_clause)*)($self_ty)
+            $($tail)*
+        }
+    };
+
+    { @
+        ( $($t_params:tt)* )
+        ( $($where_clause:tt)* )
+        ($self_ty:ty)
+
+        $unk:ident
+
+        $($stuff:tt)*
+    } => {
+        compile_error!(concat!(
+            "expected known trait, got `", stringify!($unk), "`"
+        ))
+    };
 
     {} => {};
     { @

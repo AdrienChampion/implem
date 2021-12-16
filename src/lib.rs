@@ -2,7 +2,7 @@
 //!
 //! Supported traits:
 //!
-//! - [`std::fmt::Display`]
+//! - [`std::fmt::Display`], [`std::fmt::Debug`]
 //! - [`std::convert::From`]
 //! - [`std::convert::Into`]
 //! - [`std::ops::Deref`]
@@ -33,7 +33,7 @@
 //!
 //! # Examples
 //!
-//! ## `Display`, `From` and `Into`
+//! ## `Display`, `Debug`, `From` and `Into`
 //!
 //! ```rust
 //! # use implem::implem;
@@ -44,6 +44,9 @@
 //!     for MyStruct {
 //!         Display {
 //!             |&self, fmt| write!(fmt, "{{ s: `{}` }}", self.s)
+//!         }
+//!         Debug {
+//!             |&self, fmt| write!(fmt, "MyStruct {{ s: `{}` }}", self.s)
 //!         }
 //!         From<String> {
 //!             |s| Self { s }
@@ -141,6 +144,26 @@ macro_rules! internal {
         $($tail:tt)*
     } => {
         impl<$($t_params)*> std::fmt::Display for $self_ty
+        where $($where_clauses)* {
+            fn fmt(&$slf, $fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
+                $def
+            }
+        }
+        $crate::internal! {
+            @($($t_params)*)($($where_clauses)*)($self_ty)
+            $($tail)*
+        }
+    };
+    { @
+        ( $($t_params:tt)* )
+        ( $($where_clauses:tt)* )
+        ($self_ty:ty)
+        Debug {
+            |&$slf:ident, $fmt:pat| $def:expr
+        }
+        $($tail:tt)*
+    } => {
+        impl<$($t_params)*> std::fmt::Debug for $self_ty
         where $($where_clauses)* {
             fn fmt(&$slf, $fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
                 $def
